@@ -9,41 +9,60 @@ class Router
     private $controllerName;
     private $actionName;
 
+    private $params;
+
     private $patterns;
 
+    private $suffix = 'Controller';
+
     /**
-     * @param $patterns
-     * @param $query
+     * @param array $patterns Массив с шаблонами маршрутов
+     * @param string $query Строка в которой искать совпадения
      */
-    function __construct($patterns, $query)
+    function __construct(array $patterns, $query)
     {
         $this->patterns = $patterns;
 
-        $url = isset($query) ?  rtrim($query, '/') : '/';
+        $fullURL = isset($query) ?  rtrim($query, '/') : null;
+        $partsURL = $fullURL ? explode('/', $fullURL): [];
 
-        $res = $this->matchURL($url, $this->patterns);
+        $res = $this->matchURL($fullURL, $this->patterns);
 
-        if(!$res) {
-            $this->defineControllerAndAction(explode('/', $url));
+        /**
+         * TODO: при наличии зарегистрированного роута происходит повторная обработка при прямом доступе контроллер/экшн
+         */
+        if (!$res) {
+            $this->defineControllerAndAction($partsURL);
         }
 
-        echo $this->controllerName;
+        if (!empty($partsURL)) {
+            $this->defineActionParams($partsURL);
+        }
     }
 
     /**
      * @param array $from Массив с возможными значениями контроллера и действия.
      * Если какого-то элемента нет, определяются значения по умолчанию
      */
-    private function defineControllerAndAction($from)
+    private function defineControllerAndAction(array &$from)
     {
-        $this->controllerName = 'IndexController';
+        $this->controllerName = 'Index' . $this->suffix;
         $this->actionName = 'index';
-        if (!empty($from[0])) {
-            $this->controllerName = ucfirst(strtolower($from[0])).'Controller';
-            if (!empty($from[1])) {
-                $this->actionName = strtolower($from[1]);
+        if (!empty($from)) {
+            $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->suffix;
+            if (!empty($from)) {
+                $this->actionName = strtolower(array_shift($from));
             }
         }
+    }
+
+    /**
+     * Определяет параметры для действия
+     * @param $params array Параметры для действия
+     */
+    private function defineActionParams(array &$params)
+    {
+        $this->params = $params;
     }
 
     /**
@@ -58,12 +77,12 @@ class Router
             if ($pattern['pattern']{0} === '#' &&
                 $pattern['pattern'][ strlen($pattern['pattern'] ) - 1] === '#') {
                 if (preg_match($pattern['pattern'], $url)) {
-                    $this->controllerName = $pattern['controller'].'Controller';
+                    $this->controllerName = $pattern['controller'] . $this->suffix;
                     $this->actionName = $pattern['action'];
                     return true;
                 }
             } else if ($pattern['pattern'] === $url) {
-                $this->controllerName = $pattern['controller'].'Controller';
+                $this->controllerName = $pattern['controller'] . $this->suffix;
                 $this->actionName = $pattern['action'];
                 return true;
             }
@@ -71,11 +90,16 @@ class Router
         return false;
     }
 
+    /**
+     * Вернет результат работы класса.
+     * @return array Контроллер и Метод
+     */
     public function getMatches()
     {
         return [
             'controller' => $this->controllerName,
-            'action' => $this->actionName
+            'action' => $this->actionName,
+            'params' => $this->params
         ];
     }
 }
