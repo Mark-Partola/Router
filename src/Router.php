@@ -1,27 +1,31 @@
-<?php
+<?php namespace Router;
+/**
+ * Class Router
+ * @package Router
+ */
 
 class Router
 {
     private $controllerName;
     private $actionName;
 
-    private $patternsURL = [['qwe', 'Controller->Method'], ['@^[0-9]+$', 'c->m']];
+    private $patterns;
 
-    function __construct()
+    /**
+     * @param $patterns
+     * @param $query
+     */
+    function __construct($patterns, $query)
     {
-        $url = isset($_GET['url']) ?  rtrim($_GET['url'], '/') : null;
+        $this->patterns = $patterns;
 
-        /**
-         * TODO: Должен возвращать контроллер и метод, а не записывать его в поля класса.
-         */
-        $res = $this->matchURL($url, $this->patternsURL);
+        $url = isset($query) ?  rtrim($query, '/') : '/';
+
+        $res = $this->matchURL($url, $this->patterns);
 
         if(!$res) {
             $this->defineControllerAndAction(explode('/', $url));
         }
-
-        echo $this->controllerName;
-        echo $this->actionName;
     }
 
     /**
@@ -49,25 +53,27 @@ class Router
      */
     private function matchURL($url, array $patterns) {
         foreach($patterns as $pattern) {
-            if (is_array($pattern)) {
-                if ($pattern[0]{0} === '@') {
-                    $resPattern = ltrim($pattern[0], '@');
-                    if (preg_match('#'.$resPattern.'#', $url)) {
-                        $parts = explode('->', $pattern[1]);
-                        $this->controllerName = $parts[0];
-                        $this->actionName = $parts[1];
-                        return true;
-                    }
-                } else if ($pattern[0] === $url) {
-                    $parts = explode('->', $pattern[1]);
-                    $this->controllerName = $parts[0];
-                    $this->actionName = $parts[1];
+            if ($pattern['pattern']{0} === '#' &&
+                $pattern['pattern'][ strlen($pattern['pattern'] ) - 1] === '#') {
+                if (preg_match($pattern['pattern'], $url)) {
+                    $this->controllerName = $pattern['controller'];
+                    $this->actionName = $pattern['action'];
                     return true;
                 }
-                return false;
-            } else {
-                return false;
+            } else if ($pattern['pattern'] === $url) {
+                $this->controllerName = $pattern['controller'];
+                $this->actionName = $pattern['action'];
+                return true;
             }
         }
+        return false;
+    }
+
+    public function getMatches()
+    {
+        return [
+            'controller' => $this->controllerName,
+            'action' => $this->actionName
+        ];
     }
 }
