@@ -1,12 +1,13 @@
 <?php namespace Router;
+
 /**
  * Class Router
  * @package Router
  */
-
 class Router
 {
     private $controllerName;
+
     private $actionName;
 
     private $params;
@@ -28,9 +29,6 @@ class Router
 
         $res = $this->matchURL($fullURL, $this->patterns);
 
-        /**
-         * TODO: при наличии зарегистрированного роута происходит повторная обработка при прямом доступе контроллер/экшн
-         */
         if (!$res) {
             $this->defineControllerAndAction($partsURL);
         }
@@ -48,6 +46,11 @@ class Router
     {
         $this->controllerName = 'Index' . $this->suffix;
         $this->actionName = 'index';
+
+        if ($this->checkRegisteredRoute($from)) {
+            return;
+        }
+
         if (!empty($from)) {
             $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->suffix;
             if (!empty($from)) {
@@ -75,7 +78,7 @@ class Router
     private function matchURL($url, array $patterns) {
         foreach($patterns as $pattern) {
             if ($pattern['pattern']{0} === '#' &&
-                $pattern['pattern'][ strlen($pattern['pattern'] ) - 1] === '#') {
+                $pattern['pattern']{ strlen($pattern['pattern'] ) - 1} === '#') {
                 if (preg_match($pattern['pattern'], $url)) {
                     $this->controllerName = $pattern['controller'] . $this->suffix;
                     $this->actionName = $pattern['action'];
@@ -87,6 +90,23 @@ class Router
                 return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * @param $route array
+     * @return bool
+     */
+    private function checkRegisteredRoute(array $route)
+    {
+        $controller = ucfirst(array_shift($route));
+        $action = array_shift($route);
+        foreach ($this->patterns as $pattern) {
+            if($controller === $pattern['controller'] && $action === $pattern['action']) {
+                return true;
+            }
+        }
+
         return false;
     }
 
