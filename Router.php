@@ -48,9 +48,9 @@ class Router
      * @return bool Успех поиска по массиву шаблонов
      */
     private function matchURL($url, array $patterns) {
-        $result =  array_map(function($pattern) use($url) {
+        foreach($patterns as $pattern) {
             if (is_array($pattern)) {
-                if ($pattern[0][0] === '@') {
+                if ($pattern[0]{0} === '@') {
                     $resPattern = ltrim($pattern[0], '@');
                     if (preg_match('#'.$resPattern.'#', $url)) {
                         $parts = explode('->', $pattern[1]);
@@ -66,18 +66,8 @@ class Router
                 }
                 return false;
             } else {
-                /*if ($pattern === $url) {
-                    $this->controllerName
-                    $this->actionName
-                    return true;
-                }*/
                 return false;
             }
-        }, $patterns);
-
-        if (in_array(true, $result))
-            return true;
-        else
-            return false;
+        }
     }
 }
