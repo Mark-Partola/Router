@@ -26,6 +26,8 @@ class Router
         if(!$res) {
             $this->defineControllerAndAction(explode('/', $url));
         }
+
+        echo $this->controllerName;
     }
 
     /**
@@ -34,12 +36,12 @@ class Router
      */
     private function defineControllerAndAction($from)
     {
-        $this->controllerName = 'Index';
+        $this->controllerName = 'IndexController';
         $this->actionName = 'index';
         if (!empty($from[0])) {
-            $this->controllerName = ucfirst($from[0]);
+            $this->controllerName = ucfirst(strtolower($from[0])).'Controller';
             if (!empty($from[1])) {
-                $this->actionName = $from[1];
+                $this->actionName = strtolower($from[1]);
             }
         }
     }
@@ -56,12 +58,12 @@ class Router
             if ($pattern['pattern']{0} === '#' &&
                 $pattern['pattern'][ strlen($pattern['pattern'] ) - 1] === '#') {
                 if (preg_match($pattern['pattern'], $url)) {
-                    $this->controllerName = $pattern['controller'];
+                    $this->controllerName = $pattern['controller'].'Controller';
                     $this->actionName = $pattern['action'];
                     return true;
                 }
             } else if ($pattern['pattern'] === $url) {
-                $this->controllerName = $pattern['controller'];
+                $this->controllerName = $pattern['controller'].'Controller';
                 $this->actionName = $pattern['action'];
                 return true;
             }
