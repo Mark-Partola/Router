@@ -88,14 +88,47 @@ class Router
      */
     private function matchURL(&$url, array $patterns) {
         $found = false;
+        if (is_null($url)) $url = '/';
+        $partsURL = explode('/', $url);
+
         foreach($patterns as $pattern) {
-            if ($pattern['pattern']{0} === '#' &&
-                $pattern['pattern']{ strlen($pattern['pattern'] ) - 1} === '#') {
-                if (preg_match($pattern['pattern'], $url)) {
+
+            $segments = explode('/', $pattern['pattern']);
+
+            if (count($segments) !== count($partsURL))
+                continue;
+
+            for ($i = 0; $i < count($segments); $i++) {
+                $what = $segments[$i];
+                $where = $partsURL[$i];
+
+                if(empty($what) && empty($where)) {
                     $found = true;
+                    continue;
                 }
-            } else if ($pattern['pattern'] === $url) {
-                $found = true;
+
+                $regExp = false;
+                if (!empty($what) &&
+                    $what{0} === '#' &&
+                    $what{ strlen($what) - 1 } === '#') {
+                    $regExp = true;
+                }
+
+                if ($regExp) {
+                    if (preg_match($what, $where)) {
+                        $found = true;
+                    } else {
+                        $found = false;
+                        break;
+                    }
+                } else {
+                    if ($what === $where) {
+                        $found = true;
+                    } else {
+                        $found = false;
+                        break;
+                    }
+                }
             }
 
             if($found) {
@@ -129,7 +162,7 @@ class Router
 
     /**
      * Вернет результат работы класса.
-     * @return array Контроллер и Метод
+     * @return array Контроллер, Метод и его параметры
      */
     public function getMatches()
     {
