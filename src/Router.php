@@ -99,36 +99,15 @@ class Router
                 continue;
 
             for ($i = 0; $i < count($segments); $i++) {
-                $what = $segments[$i];
-                $where = $partsURL[$i];
 
-                if(empty($what) && empty($where)) {
+                if ($this->checkSegment($segments[$i], $partsURL[$i])) {
                     $found = true;
                     continue;
-                }
-
-                $regExp = false;
-                if (!empty($what) &&
-                    $what{0} === '#' &&
-                    $what{ strlen($what) - 1 } === '#') {
-                    $regExp = true;
-                }
-
-                if ($regExp) {
-                    if (preg_match($what, $where)) {
-                        $found = true;
-                    } else {
-                        $found = false;
-                        break;
-                    }
                 } else {
-                    if ($what === $where) {
-                        $found = true;
-                    } else {
-                        $found = false;
-                        break;
-                    }
+                    $found = false;
+                    break;
                 }
+
             }
 
             if($found) {
@@ -158,6 +137,43 @@ class Router
         }
 
         return false;
+    }
+
+    /**
+     * Проверка соответствия сегмента шаблона сегменту строки запроса.
+     * Сегмент шаблона может содержать регулярное выражение или простую строку.
+     * Шаблон должен быть окружен символами '#'.
+     * Если оба сегмента пустые - вернется true.
+     * @param $regSegment string Сегмент шаблона регистрированного маршрута (строка или регулярное выражение)
+     * @param $querySegment string Сегмент строки где ищется совпадение
+     * @return bool Если найдено соответствие возвращатеся true, иначе false
+     */
+    private function checkSegment($regSegment, $querySegment)
+    {
+        if(empty($regSegment) && empty($querySegment)) {
+            return true;
+        }
+
+        $regExp = false;
+        if (!empty($regSegment) &&
+            $regSegment{0} === '#' &&
+            $regSegment{ strlen($regSegment) - 1 } === '#') {
+            $regExp = true;
+        }
+
+        if ($regExp) {
+            if (preg_match($regSegment, $querySegment)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if ($regSegment === $querySegment) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
     /**
