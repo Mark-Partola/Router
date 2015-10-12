@@ -28,9 +28,10 @@ class Router
         $this->patterns = $patterns;
 
         $fullURL = isset($query) ?  rtrim($query, '/') : null;
-        $partsURL = $fullURL ? explode('/', $fullURL): [];
 
         $res = $this->matchURL($fullURL, $this->patterns);
+
+        $partsURL = $fullURL ? explode('/', $fullURL): [];
 
         if (!$res) {
             $this->defineControllerAndAction($partsURL);
@@ -80,25 +81,31 @@ class Router
      * Выбирается контроллер и метод при успешном поиске.
      * Два варианта поиска по шаблону - регулярное выражение и непосредственный маршрут.
      * Поиск по регулярному выражению должен быть обрамлен символом '#' с двух сторон
+     * Чтобы дальнейший поиск параметров в строке не продолжился - обнуляем $url.
      * @param $url String Строка, с которой проверяются совпадения.
      * @param $patterns Array Массив, содержащий шаблоны и соответствующие им контроллеры и методы.
      * @return bool Успех поиска по массиву шаблонов
      */
-    private function matchURL($url, array $patterns) {
+    private function matchURL(&$url, array $patterns) {
+        $found = false;
         foreach($patterns as $pattern) {
             if ($pattern['pattern']{0} === '#' &&
                 $pattern['pattern']{ strlen($pattern['pattern'] ) - 1} === '#') {
                 if (preg_match($pattern['pattern'], $url)) {
-                    $this->controllerName = $pattern['controller'] . $this->suffix;
-                    $this->actionName = $pattern['action'];
-                    return true;
+                    $found = true;
                 }
             } else if ($pattern['pattern'] === $url) {
+                $found = true;
+            }
+
+            if($found) {
                 $this->controllerName = $pattern['controller'] . $this->suffix;
                 $this->actionName = $pattern['action'];
+                $url = null;
                 return true;
             }
         }
+
         return false;
     }
 
