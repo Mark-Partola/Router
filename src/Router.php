@@ -6,18 +6,39 @@
  */
 class Router
 {
+    /**
+     * @var array Конфигурация маршрутизатора, определяется в конструкторе.
+     */
     private $config = [];
 
+    /**
+     * @var String Имя выявленного контроллера, возвращается, как результат работы класса.
+     */
     private $controllerName;
 
+    /**
+     * @var string Имя выявленного действия, возвращается, как результат работы класса.
+     */
     private $actionName;
 
+    /**
+     * @var array Массив, содержащий выявленные параметры действия
+     */
     private $params = [];
 
+    /**
+     * @var array Массив шаблонов, по которым происходит поиск совпадений со строкой запроса. Задается в конструкторе.
+     */
     private $patterns;
 
+    /**
+     * @var array Части строки запроса, по которым происходит поиск контроллера, действия и параметров
+     */
     private $fullURL;
 
+    /**
+     * @var boolean Определение необходимости продолжения цепочки вызовов.
+     */
     private $next;
 
     /**
@@ -65,54 +86,6 @@ class Router
             isset($config['allowAutoDetect'])
                 ? $config['allowAutoDetect']
                 : false;
-    }
-
-    /**
-     * Опреление контроллера и его действия. Поиск происходит по шаблону контроллер/действие
-     * По умолчанию контроллер равен IndexController, метод - index()
-     * Если связка была регистрирована - тогда объявлять ничего не нужно,
-     * сделано это для защиты от множественного доступа к одному ресурсу (СЕО)
-     * @param array $from Массив с возможными значениями контроллера и действия.
-     * Если какого-то элемента нет, определяются значения по умолчанию
-     * @return $this
-     */
-    private function defineAutoDetect(array &$from)
-    {
-        if (!$this->next) return $this;
-
-        if (!$this->config['allowAutoDetect']) return $this;
-
-        $this->controllerName = $this->config['defaultController'] . $this->config['defaultSuffix'];
-        $this->actionName = $this->config['defaultAction'];
-
-        if ($this->config['allowRegister']) {
-            if ($this->checkRegisteredRoute($from)) {
-                return $this;
-            }
-        }
-
-        if (!empty($from[0])) {
-            $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->config['defaultSuffix'];
-            if (!empty($from)) {
-                $this->actionName = strtolower(array_shift($from));
-            }
-        } else {
-            unset($from[0]);
-            unset($from[1]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Добавляет параметры для действия из массива
-     * @param $params array Параметры для действия
-     */
-    private function defineParams(array $params)
-    {
-        foreach ($params as $param) {
-            array_push($this->params, $param);
-        }
     }
 
     /**
@@ -167,6 +140,54 @@ class Router
 
         $this->next = true;
         return $this;
+    }
+
+    /**
+     * Опреление контроллера и его действия. Поиск происходит по шаблону контроллер/действие
+     * По умолчанию контроллер равен IndexController, метод - index()
+     * Если связка была регистрирована - тогда объявлять ничего не нужно,
+     * сделано это для защиты от множественного доступа к одному ресурсу (СЕО)
+     * @param array $from Массив с возможными значениями контроллера и действия.
+     * Если какого-то элемента нет, определяются значения по умолчанию
+     * @return $this
+     */
+    private function defineAutoDetect(array &$from)
+    {
+        if (!$this->next) return $this;
+
+        if (!$this->config['allowAutoDetect']) return $this;
+
+        $this->controllerName = $this->config['defaultController'] . $this->config['defaultSuffix'];
+        $this->actionName = $this->config['defaultAction'];
+
+        if ($this->config['allowRegister']) {
+            if ($this->checkRegisteredRoute($from)) {
+                return $this;
+            }
+        }
+
+        if (!empty($from[0])) {
+            $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->config['defaultSuffix'];
+            if (!empty($from)) {
+                $this->actionName = strtolower(array_shift($from));
+            }
+        } else {
+            unset($from[0]);
+            unset($from[1]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Добавляет параметры для действия из массива
+     * @param $params array Параметры для действия
+     */
+    private function defineParams(array $params)
+    {
+        foreach ($params as $param) {
+            array_push($this->params, $param);
+        }
     }
 
     /**
