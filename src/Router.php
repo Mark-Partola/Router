@@ -59,16 +59,19 @@ class Router
             return;
         }
 
-        if (!empty($from)) {
+        if (!empty($from[0])) {
             $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->suffix;
             if (!empty($from)) {
                 $this->actionName = strtolower(array_shift($from));
             }
+        } else {
+            unset($from[0]);
+            unset($from[1]);
         }
     }
 
     /**
-     * Определяет параметры для действия
+     * Добавляет параметры для действия из массива
      * @param $params array Параметры для действия
      */
     private function defineActionParams(array $params)
@@ -77,7 +80,7 @@ class Router
             array_push($this->params, $param);
         }
     }
-    
+
     /**
      * Проверка совпадений переданной строки с каждым элементом массива шаблонов.
      * Выбирается контроллер и метод при успешном поиске.
@@ -96,6 +99,10 @@ class Router
         foreach($patterns as $pattern) {
 
             $segments = explode('/', $pattern['pattern']);
+
+            if ($_SERVER['REQUEST_METHOD'] !== $pattern['method']) {
+                continue;
+            }
 
             if (count($segments) !== count($partsURL))
                 continue;
