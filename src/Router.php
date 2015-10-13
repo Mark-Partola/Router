@@ -40,8 +40,10 @@ class Router
 
         $partsURL = $fullURL ? explode('/', $fullURL): [];
 
-        if (!$this->next) {
-            $this->defineControllerAndAction($partsURL);
+        if ($this->config['allowAutoDetect']) {
+            if (!$this->next) {
+                $this->defineControllerAndAction($partsURL);
+            }
         }
 
         if (!empty($partsURL)) {
