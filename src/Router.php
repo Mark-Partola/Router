@@ -6,6 +6,8 @@
  */
 class Router
 {
+    private $config = [];
+
     private $controllerName;
 
     private $actionName;
@@ -20,11 +22,13 @@ class Router
      * 1. Проверка запроса по регистрированным маршрутам.
      * 2. Определение контроллера и действия, если предыдущий пункт ничего не нашел.
      * 3. Определение аргументов действия.
-     * @param array $patterns Массив с шаблонами маршрутов
+     * @param array $config Конфигурация маршрутизатора
      * @param string $query Строка в которой искать совпадения
+     * @param array $patterns Массив с шаблонами маршрутов
      */
-    function __construct(array $patterns, $query)
+    function __construct(array $config, $query, array $patterns)
     {
+        $this->setConfig($config);
         $this->patterns = $patterns;
 
         $fullURL = isset($query) ?  rtrim($query, '/') : null;
@@ -40,6 +44,34 @@ class Router
         if (!empty($partsURL)) {
             $this->defineActionParams($partsURL);
         }
+    }
+
+    /**
+     * Определяет конфигурацию или дефолтные настройки.
+     * @param array $config конфигурация роутера
+     */
+    private function setConfig(array $config)
+    {
+        $this->config['defaultController'] =
+            isset($config['defaultController'])
+                ? ucfirst($config['defaultController'])
+                : 'Index';
+        $this->config['defaultAction'] =
+            isset($config['defaultAction'])
+                ? $config['defaultAction']
+                : 'index';
+        $this->config['defaultSuffix'] =
+            isset($config['defaultSuffix'])
+                ? ucfirst($config['defaultSuffix'])
+                : 'Controller';
+        $this->config['allowRegister'] =
+            isset($config['allowRegister'])
+                ? $config['allowRegister']
+                : true;
+        $this->config['allowAutoDetect'] =
+            isset($config['allowAutoDetect'])
+                ? $config['allowAutoDetect']
+                : false;
     }
 
     /**
