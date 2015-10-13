@@ -16,7 +16,8 @@ class Router
 
     private $patterns;
 
-    private $suffix = 'Controller';
+
+    private $next = false;
 
     /**
      * 1. Проверка запроса по регистрированным маршрутам.
@@ -26,18 +27,21 @@ class Router
      * @param string $query Строка в которой искать совпадения
      * @param array $patterns Массив с шаблонами маршрутов
      */
-    function __construct(array $config, $query, array $patterns)
+    function __construct(array $config, $query, array $patterns = [])
     {
         $this->setConfig($config);
         $this->patterns = $patterns;
 
         $fullURL = isset($query) ?  rtrim($query, '/') : null;
 
-        $res = $this->matchURL($fullURL, $this->patterns);
+        //if ($this->config['allowRegister']) {
+            $this->next = $this->matchURL($fullURL, $this->patterns);
+        //}
 
         $partsURL = $fullURL ? explode('/', $fullURL): [];
 
-        if (!$res) {
+        if (!$this->next) {
+
             $this->defineControllerAndAction($partsURL);
         }
 
@@ -84,15 +88,15 @@ class Router
      */
     private function defineControllerAndAction(array &$from)
     {
-        $this->controllerName = 'Index' . $this->suffix;
-        $this->actionName = 'index';
+        $this->controllerName = $this->config['defaultController'] . $this->config['defaultSuffix'];
+        $this->actionName = $this->config['defaultAction'];
 
         if ($this->checkRegisteredRoute($from)) {
             return;
         }
 
         if (!empty($from[0])) {
-            $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->suffix;
+            $this->controllerName = ucfirst(strtolower(array_shift($from))) . $this->config['defaultSuffix'];
             if (!empty($from)) {
                 $this->actionName = strtolower(array_shift($from));
             }
@@ -152,7 +156,7 @@ class Router
             }
 
             if($found) {
-                $this->controllerName = $pattern['controller'] . $this->suffix;
+                $this->controllerName = $pattern['controller'] . $this->config['defaultSuffix'];
                 $this->actionName = $pattern['action'];
                 $url = null;
                 return true;
