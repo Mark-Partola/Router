@@ -34,14 +34,13 @@ class Router
 
         $fullURL = isset($query) ?  rtrim($query, '/') : null;
 
-        //if ($this->config['allowRegister']) {
+        if ($this->config['allowRegister']) {
             $this->next = $this->matchURL($fullURL, $this->patterns);
-        //}
+        }
 
         $partsURL = $fullURL ? explode('/', $fullURL): [];
 
         if (!$this->next) {
-
             $this->defineControllerAndAction($partsURL);
         }
 
@@ -91,8 +90,10 @@ class Router
         $this->controllerName = $this->config['defaultController'] . $this->config['defaultSuffix'];
         $this->actionName = $this->config['defaultAction'];
 
-        if ($this->checkRegisteredRoute($from)) {
-            return;
+        if ($this->config['allowRegister']) {
+            if ($this->checkRegisteredRoute($from)) {
+                return;
+            }
         }
 
         if (!empty($from[0])) {
