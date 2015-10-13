@@ -16,8 +16,9 @@ class Router
 
     private $patterns;
 
+    private $fullURL;
 
-    private $next = false;
+    private $next;
 
     /**
      * 1. Проверка запроса по регистрированным маршрутам.
@@ -30,25 +31,12 @@ class Router
     function __construct(array $config, $query, array $patterns = [])
     {
         $this->setConfig($config);
+        $this->fullURL = isset($query) ?  explode('/', rtrim($query, '/')) : [];
         $this->patterns = $patterns;
 
-        $fullURL = isset($query) ?  rtrim($query, '/') : null;
-
-        if ($this->config['allowRegister']) {
-            $this->next = $this->matchURL($fullURL, $this->patterns);
-        }
-
-        $partsURL = $fullURL ? explode('/', $fullURL): [];
-
-        if ($this->config['allowAutoDetect']) {
-            if (!$this->next) {
-                $this->defineControllerAndAction($partsURL);
-            }
-        }
-
-        if (!empty($partsURL)) {
-            $this->defineActionParams($partsURL);
-        }
+        $this->matchURL($this->fullURL, $this->patterns)
+                ->defineControllerAndAction($this->fullURL)
+                    ->defineActionParams($this->fullURL);
     }
 
     /**
@@ -86,15 +74,20 @@ class Router
      * сделано это для защиты от множественного доступа к одному ресурсу (СЕО)
      * @param array $from Массив с возможными значениями контроллера и действия.
      * Если какого-то элемента нет, определяются значения по умолчанию
+     * @return $this
      */
     private function defineControllerAndAction(array &$from)
     {
+        if (!$this->next) return $this;
+
+        if (!$this->config['allowAutoDetect']) return $this;
+
         $this->controllerName = $this->config['defaultController'] . $this->config['defaultSuffix'];
         $this->actionName = $this->config['defaultAction'];
 
         if ($this->config['allowRegister']) {
             if ($this->checkRegisteredRoute($from)) {
-                return;
+                return $this;
             }
         }
 
@@ -107,6 +100,8 @@ class Router
             unset($from[0]);
             unset($from[1]);
         }
+
+        return $this;
     }
 
     /**
@@ -125,15 +120,20 @@ class Router
      * Выбирается контроллер и метод при успешном поиске.
      * Два варианта поиска по шаблону - регулярное выражение и непосредственный маршрут.
      * Поиск по регулярному выражению должен быть обрамлен символом '#' с двух сторон
-     * Чтобы дальнейший поиск параметров в строке не продолжился - обнуляем $url.
-     * @param $url String Строка, с которой проверяются совпадения.
+     * Чтобы дальнейший поиск параметров в строке не продолжился - обнуляем $this->fullURL.
+     * Для продолжения цепочки возвращает $this. И определяет флаг $this->next.
+     * @param $partsURL array Строка, с которой проверяются совпадения.
      * @param $patterns Array Массив, содержащий шаблоны и соответствующие им контроллеры и методы.
-     * @return bool Успех поиска по массиву шаблонов
+     * @return $this Продолжение цепочки. При успешном выполнении $this->next = false
      */
-    private function matchURL(&$url, array $patterns) {
+    private function matchURL(array $partsURL, array $patterns)
+    {
+        if (!$this->config['allowRegister']) {
+            $this->next = true;
+            return $this;
+        }
+
         $found = false;
-        if (is_null($url)) $url = '/';
-        $partsURL = explode('/', $url);
 
         foreach($patterns as $pattern) {
 
@@ -147,7 +147,6 @@ class Router
                 continue;
 
             for ($i = 0; $i < count($segments); $i++) {
-
                 if ($this->checkSegment($segments[$i], $partsURL[$i])) {
                     $found = true;
                     continue;
@@ -155,18 +154,19 @@ class Router
                     $found = false;
                     break;
                 }
-
             }
 
             if($found) {
                 $this->controllerName = $pattern['controller'] . $this->config['defaultSuffix'];
                 $this->actionName = $pattern['action'];
-                $url = null;
-                return true;
+                $this->fullURL = [];
+                $this->next = false;
+                return $this;
             }
         }
 
-        return false;
+        $this->next = true;
+        return $this;
     }
 
     /**
