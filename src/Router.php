@@ -10,7 +10,7 @@ class Router
 
     private $actionName;
 
-    private $params;
+    private $params = [];
 
     private $patterns;
 
@@ -71,11 +71,13 @@ class Router
      * Определяет параметры для действия
      * @param $params array Параметры для действия
      */
-    private function defineActionParams(array &$params)
+    private function defineActionParams(array $params)
     {
-        $this->params = $params;
+        foreach ($params as $param) {
+            array_push($this->params, $param);
+        }
     }
-
+    
     /**
      * Проверка совпадений переданной строки с каждым элементом массива шаблонов.
      * Выбирается контроллер и метод при успешном поиске.
@@ -163,6 +165,7 @@ class Router
 
         if ($regExp) {
             if (preg_match($regSegment, $querySegment)) {
+                $this->defineActionParams([$querySegment]);
                 return true;
             } else {
                 return false;
