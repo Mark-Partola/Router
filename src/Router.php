@@ -28,15 +28,15 @@ class Router
      * @param string $query Строка в которой искать совпадения
      * @param array $patterns Массив с шаблонами маршрутов
      */
-    function __construct(array $config, $query, array $patterns = [])
+    function __construct($query, array $patterns = [], array $config)
     {
-        $this->setConfig($config);
         $this->fullURL = isset($query) ?  explode('/', rtrim($query, '/')) : [];
         $this->patterns = $patterns;
+        $this->setConfig($config);
 
-        $this->matchURL($this->fullURL, $this->patterns)
-                ->defineControllerAndAction($this->fullURL)
-                    ->defineActionParams($this->fullURL);
+        $this->defineRegistered($this->fullURL, $this->patterns)
+                ->defineAutoDetect($this->fullURL)
+                    ->defineParams($this->fullURL);
     }
 
     /**
@@ -76,7 +76,7 @@ class Router
      * Если какого-то элемента нет, определяются значения по умолчанию
      * @return $this
      */
-    private function defineControllerAndAction(array &$from)
+    private function defineAutoDetect(array &$from)
     {
         if (!$this->next) return $this;
 
@@ -108,7 +108,7 @@ class Router
      * Добавляет параметры для действия из массива
      * @param $params array Параметры для действия
      */
-    private function defineActionParams(array $params)
+    private function defineParams(array $params)
     {
         foreach ($params as $param) {
             array_push($this->params, $param);
@@ -126,7 +126,7 @@ class Router
      * @param $patterns Array Массив, содержащий шаблоны и соответствующие им контроллеры и методы.
      * @return $this Продолжение цепочки. При успешном выполнении $this->next = false
      */
-    private function matchURL(array $partsURL, array $patterns)
+    private function defineRegistered(array $partsURL, array $patterns)
     {
         if (!$this->config['allowRegister']) {
             $this->next = true;
@@ -211,7 +211,7 @@ class Router
 
         if ($regExp) {
             if (preg_match($regSegment, $querySegment)) {
-                $this->defineActionParams([$querySegment]);
+                $this->defineParams([$querySegment]);
                 return true;
             } else {
                 return false;
